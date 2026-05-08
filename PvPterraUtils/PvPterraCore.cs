@@ -18,7 +18,7 @@ namespace PvPterraUtils
     public class PvPterraCore : TerrariaPlugin
     {
         public override string Name => "PvPterraUtils";
-        public override Version Version => new Version(1, 0, 0, 0);
+        public override Version Version => new Version(1, 0, 1, 0);
         public override string Author => "PakeMPC";
         public override string Description => "Advanced PvP management system with multiple tools.";
 
