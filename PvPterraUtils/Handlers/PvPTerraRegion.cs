@@ -228,37 +228,59 @@ namespace PvPterraUtils.Handlers
 
             int requiredPlayers = GetRequiredPlayers(config.Mode);
 
-            if (isFFA || requiredPlayers <= 0)
+if (isFFA || requiredPlayers <= 0)
             {
-
-                var ffaPlayers = PvPterraCore.PvPPlayers.Where(p => p != null && p.IsInPvP && p.CurrentRegion == regionName && p.IsWaitingForMatch && !p.IsSpectator).ToList();
-
-                foreach (var p in ffaPlayers)
+                var allFFAPlayers = PvPterraCore.PvPPlayers
+                    .Where(p => p != null && p.IsInPvP && p.CurrentRegion == regionName && !p.IsSpectator)
+                    .ToList();
+                var waitingFFAPlayers = allFFAPlayers.Where(p => p.IsWaitingForMatch).ToList();
+                if (allFFAPlayers.Count < 2)
                 {
-                    if (!PvPTerraInventory.TryTakeEscrow(p.TSPlayer, config.PvPreward))
+                    foreach (var p in waitingFFAPlayers)
                     {
-                        p.TSPlayer.Teleport(Main.spawnTileX * 16, Main.spawnTileY * 16);
-                        string costIcons = Utils.PvPTerraMisc.CopperToIconTag(Utils.PvPTerraMisc.ParseCoinString(config.PvPreward));
-                        p.TSPlayer.SendErrorMessage(PvPTerrai18n.GetString("Reg_FFANeedFunds", costIcons));
-                        p.ResetPvPState();
-                        Utils.PvPTerraMisc.SyncPvPState(p.TSPlayer, false, "None");
-                        continue;
+                        p.TSPlayer.SendInfoMessage(PvPTerrai18n.GetString("Reg_WaitingPlayers", config.Mode, allFFAPlayers.Count, 2));
+                    }
+                    return;
+                }
+
+                if (waitingFFAPlayers.Count > 0)
+                {
+                    bool anyoneKicked = false;
+                    foreach (var p in waitingFFAPlayers)
+                    {
+                        if (!PvPTerraInventory.HasEnoughEscrow(p.TSPlayer, config.PvPreward))
+                        {
+                            p.TSPlayer.Teleport(Main.spawnTileX * 16, Main.spawnTileY * 16);
+                            string costIcons = Utils.PvPTerraMisc.CopperToIconTag(Utils.PvPTerraMisc.ParseCoinString(config.PvPreward));
+                            p.TSPlayer.SendErrorMessage(PvPTerrai18n.GetString("Reg_KickNoFunds", costIcons));
+                            p.ResetPvPState();
+                            Utils.PvPTerraMisc.SyncPvPState(p.TSPlayer, false, "None");
+                            anyoneKicked = true;
+                        }
                     }
 
-                    p.HasPaidEscrow = true;
-                    p.IsWaitingForMatch = false; 
-                    p.IsSpectator = false;
+                    if (anyoneKicked)
+                    {
+                        UpdateMatchState(regionName, config);
+                        return;
+                    }
 
-                    if (config.PvPinventoryActive || PvPTerraJson.Config.PvPinventoryActive)
-                        PvPTerraInventory.ApplyPvPInventory(p.TSPlayer, config);
+                    foreach (var p in waitingFFAPlayers)
+                    {
+                        PvPTerraInventory.TryTakeEscrow(p.TSPlayer, config.PvPreward);
+                        p.HasPaidEscrow = true;
+                        p.IsWaitingForMatch = false; 
+                        p.IsSpectator = false;
 
-                    p.TSPlayer.TPlayer.hostile = true;
-                    NetMessage.SendData((int)PacketTypes.TogglePvp, -1, -1, null, p.TSPlayer.Index);
+                        if (config.PvPinventoryActive || PvPTerraJson.Config.PvPinventoryActive)
+                            PvPTerraInventory.ApplyPvPInventory(p.TSPlayer, config);
 
-                    p.LastItemRestoreTime = DateTime.Now;
-                    p.LastPotionRestoreTime = DateTime.Now;
-
-                    p.TSPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Reg_FFAEnter"));
+                        p.TSPlayer.TPlayer.hostile = true;
+                        NetMessage.SendData((int)PacketTypes.TogglePvp, -1, -1, null, p.TSPlayer.Index);
+                        p.LastItemRestoreTime = DateTime.Now;
+                        p.LastPotionRestoreTime = DateTime.Now;
+                        p.TSPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Reg_FFAEnter"));
+                    }
                 }
                 return;
             }
