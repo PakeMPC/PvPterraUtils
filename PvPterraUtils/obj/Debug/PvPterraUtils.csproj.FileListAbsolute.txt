@@ -1,0 +1,33 @@
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterraUtils.csproj.AssemblyReference.cache
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterraUtils.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterraUtils.csproj.CoreCompileInputs.cache
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\Documents\Tools\TShock\ServerPlugins\PvPterraUtils.deps.json
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\Documents\Tools\TShock\ServerPlugins\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\Documents\Tools\TShock\ServerPlugins\PvPterraUtils.pdb
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterra.675F1F57.Up2Date
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\PvPterraUtils\obj\Debug\refint\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterraUtils.pdb
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\PvPterraUtils\PvPterraUtils\obj\Debug\ref\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\Documents\Tools\TShock\ServerPlugins\PvPterraUtils.deps.json
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\Documents\Tools\TShock\ServerPlugins\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\Documents\Tools\TShock\ServerPlugins\PvPterraUtils.pdb
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterraUtils.csproj.AssemblyReference.cache
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterraUtils.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterraUtils.csproj.CoreCompileInputs.cache
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterra.675F1F57.Up2Date
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\PvPterraUtils\obj\Debug\refint\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\PvPterraUtils\obj\Debug\PvPterraUtils.pdb
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils\PvPterraUtils\obj\Debug\ref\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\Documents\Tools\TShock\ServerPlugins\PvPterraUtils.deps.json
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\Documents\Tools\TShock\ServerPlugins\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\Documents\Tools\TShock\ServerPlugins\PvPterraUtils.pdb
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\PvPterraUtils\obj\Debug\PvPterraUtils.csproj.AssemblyReference.cache
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\PvPterraUtils\obj\Debug\PvPterraUtils.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\PvPterraUtils\obj\Debug\PvPterraUtils.csproj.CoreCompileInputs.cache
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\PvPterraUtils\obj\Debug\PvPterra.675F1F57.Up2Date
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\PvPterraUtils\obj\Debug\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\PvPterraUtils\obj\Debug\refint\PvPterraUtils.dll
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\PvPterraUtils\obj\Debug\PvPterraUtils.pdb
+C:\Users\benit\Documents\Proyectos\TerrapapusPro2026\Fuentes de plugins\Mios\PvPterraUtils 1.0.7.0 (sin Comentar)\PvPterraUtils\obj\Debug\ref\PvPterraUtils.dll
