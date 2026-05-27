@@ -439,6 +439,7 @@ namespace PvPterraUtils.utils
             }
 
             if (_texts["en"].ContainsKey(key))
+
             {
                 string text = _texts["es"][key];
                 return args.Length > 0 ? string.Format(text, args) : text;

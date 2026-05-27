@@ -14,6 +14,8 @@ namespace PvPterraUtils.Handlers
     {
         public static bool TryTakeEscrow(TSPlayer player, string costString)
         {
+            if (player == null || player.TPlayer == null || player.TPlayer.inventory == null) return false;
+
             if (string.IsNullOrWhiteSpace(costString) || costString.ToLower() == "none")
                 return true;
 
@@ -28,6 +30,13 @@ namespace PvPterraUtils.Handlers
                 else if (item.type == 72) playerTotalCopper += item.stack * 100;  
                 else if (item.type == 73) playerTotalCopper += item.stack * 10000;   
                 else if (item.type == 74) playerTotalCopper += (long)item.stack * 1000000; 
+
+                if (item == null) continue;
+
+                if (item.type == 71) playerTotalCopper += item.stack;
+                else if (item.type == 72) playerTotalCopper += item.stack * 100;
+                else if (item.type == 73) playerTotalCopper += item.stack * 10000;
+                else if (item.type == 74) playerTotalCopper += (long)item.stack * 1000000;
             }
 
             if (playerTotalCopper < (long)totalCopperCost)
@@ -60,21 +69,28 @@ namespace PvPterraUtils.Handlers
 
             return true;
         }
+
         public static bool HasEnoughEscrow(TSPlayer player, string costString)
         {
+            if (player == null || player.TPlayer == null || player.TPlayer.inventory == null) return false;
+
             if (string.IsNullOrWhiteSpace(costString) || costString.ToLower() == "none") return true;
 
             int totalCopperCost = Utils.PvPTerraMisc.ParseCoinString(costString);
             if (totalCopperCost <= 0) return true;
 
             long playerTotalCopper = 0;
-            for (int i = 50; i < 54; i++) 
+
+            for (int i = 50; i < 54; i++)
             {
                 var item = player.TPlayer.inventory[i];
-                if (item.type == 71) playerTotalCopper += item.stack;           
-                else if (item.type == 72) playerTotalCopper += item.stack * 100;      
-                else if (item.type == 73) playerTotalCopper += item.stack * 10000;   
-                else if (item.type == 74) playerTotalCopper += (long)item.stack * 1000000; 
+
+                if (item == null) continue;
+
+                if (item.type == 71) playerTotalCopper += item.stack;
+                else if (item.type == 72) playerTotalCopper += item.stack * 100;
+                else if (item.type == 73) playerTotalCopper += item.stack * 10000;
+                else if (item.type == 74) playerTotalCopper += (long)item.stack * 1000000;
             }
 
             return playerTotalCopper >= totalCopperCost;
@@ -161,7 +177,8 @@ namespace PvPterraUtils.Handlers
                 NetMessage.SendData((int)PacketTypes.PlayerSlot, -1, -1, null, tsPlayer.Index, i + 89);
             }
 
-            Data.PvPTerraJson.SaveInventoryBackup(tsPlayer.Account.Name, pvpPlayer.OriginalInventory);
+            string accName = tsPlayer.Account?.Name ?? tsPlayer.Name;
+            Data.PvPTerraJson.SaveInventoryBackup(accName, pvpPlayer.OriginalInventory, pvpPlayer.OriginalStatLifeMax, pvpPlayer.OriginalStatManaMax);
 
             var itemsList = (regionConfig.PvPinventoryItems?.Count > 0) ? regionConfig.PvPinventoryItems : Data.PvPTerraJson.Config.PvPinventoryItems;
             var potionsList = (regionConfig.PvPinventoryPotions?.Count > 0) ? regionConfig.PvPinventoryPotions : Data.PvPTerraJson.Config.PvPinventoryPotions;
@@ -209,7 +226,6 @@ namespace PvPterraUtils.Handlers
             }
             if (!regionConfig.AllowPickUp)
             {
-
                 tsPlayer.TPlayer.inventory[40].SetDefaults(4346);
                 tsPlayer.TPlayer.inventory[40].stack = 1;
 
@@ -253,7 +269,8 @@ namespace PvPterraUtils.Handlers
                 NetMessage.SendData((int)PacketTypes.PlayerSlot, -1, -1, null, tsPlayer.Index, i + 89);
             }
 
-            Data.PvPTerraJson.SaveInventoryBackup(tsPlayer.Account.Name, pvpPlayer.OriginalInventory);
+            string accName = tsPlayer.Account?.Name ?? tsPlayer.Name;
+            Data.PvPTerraJson.SaveInventoryBackup(accName, pvpPlayer.OriginalInventory, pvpPlayer.OriginalStatLifeMax, pvpPlayer.OriginalStatManaMax);
 
             int scryingOrbId = 5644;
             tsPlayer.TPlayer.inventory[0].SetDefaults(scryingOrbId);
@@ -261,12 +278,12 @@ namespace PvPterraUtils.Handlers
             NetMessage.SendData((int)PacketTypes.PlayerSlot, -1, -1, null, tsPlayer.Index, 0);
         }
 
-
         public static void CheckAndRecoverInventoryOnLogin(TSPlayer tsPlayer)
         {
             if (tsPlayer == null || !tsPlayer.IsLoggedIn) return;
 
-            var backup = Data.PvPTerraJson.LoadInventoryBackup(tsPlayer.Account.Name);
+            string accName = tsPlayer.Account?.Name ?? tsPlayer.Name;
+            var backup = Data.PvPTerraJson.LoadInventoryBackup(accName);
 
             if (backup != null)
             {
@@ -274,6 +291,11 @@ namespace PvPterraUtils.Handlers
 
                 if (pvpPlayer != null)
                 {
+                    pvpPlayer.OriginalStatLifeMax = backup.OriginalLife > 0 ? backup.OriginalLife : tsPlayer.TPlayer.statLifeMax;
+                    pvpPlayer.OriginalStatManaMax = backup.OriginalMana > 0 ? backup.OriginalMana : tsPlayer.TPlayer.statManaMax;
+
+                    pvpPlayer.OriginalInventory = backup.Items;
+
                     RestoreOriginalInventory(pvpPlayer);
 
                     if (TShock.ServerSideCharacterConfig.Settings.Enabled)
@@ -290,6 +312,8 @@ namespace PvPterraUtils.Handlers
         {
             var tsPlayer = pvpPlayer.TSPlayer;
 
+            if (pvpPlayer.OriginalStatLifeMax <= 0) return;
+
             tsPlayer.TPlayer.statLifeMax = pvpPlayer.OriginalStatLifeMax;
             tsPlayer.TPlayer.statManaMax = pvpPlayer.OriginalStatManaMax;
 
@@ -300,74 +324,76 @@ namespace PvPterraUtils.Handlers
             NetMessage.SendData((int)PacketTypes.PlayerMana, -1, -1, null, tsPlayer.Index);
 
             var backup = pvpPlayer.OriginalInventory;
-
-
+            string accName = tsPlayer.Account?.Name ?? tsPlayer.Name;
 
             if (backup == null || backup[0].NetId == 0)
-                backup = PvPTerraJson.LoadInventoryBackup(tsPlayer.Account.Name);
-
+            {
+                var diskBackup = PvPTerraJson.LoadInventoryBackup(accName);
+                if (diskBackup != null) backup = diskBackup.Items;
+            }
 
             if (backup != null)
             {
+                for (int i = 0; i < 59; i++)
                 {
-                    for (int i = 0; i < 59; i++)
+                    SetAndSync(tsPlayer, i, backup[i], 0);
+                }
+
+                var savedTrash = backup[99];
+                if (savedTrash.NetId != 0)
+                {
+                    tsPlayer.TPlayer.trashItem.netDefaults(savedTrash.NetId);
+                    tsPlayer.TPlayer.trashItem.stack = savedTrash.Stack;
+                    tsPlayer.TPlayer.trashItem.prefix = savedTrash.PrefixId;
+                }
+                else
+                {
+                    tsPlayer.TPlayer.trashItem = new Item();
+                }
+
+                for (int i = 0; i < Player.maxBuffs; i++)
+                {
+                    tsPlayer.TPlayer.buffType[i] = 0;
+                    tsPlayer.TPlayer.buffTime[i] = 0;
+                }
+                NetMessage.SendData((int)PacketTypes.PlayerBuff, -1, -1, null, tsPlayer.Index);
+
+                for (int i = 0; i < Player.maxBuffs; i++)
+                {
+                    var savedBuff = backup[i + 200];
+                    if (savedBuff.NetId != 0)
                     {
-                        SetAndSync(tsPlayer, i, backup[i], 0);
-                    }
-
-                    var savedTrash = backup[99];
-                    if (savedTrash.NetId != 0)
-                    {
-                        tsPlayer.TPlayer.trashItem.netDefaults(savedTrash.NetId);
-                        tsPlayer.TPlayer.trashItem.stack = savedTrash.Stack;
-                        tsPlayer.TPlayer.trashItem.prefix = savedTrash.PrefixId;
-                    }
-                    else
-                    {
-                        tsPlayer.TPlayer.trashItem = new Item();
-                    }
-
-                    for (int i = 0; i < Player.maxBuffs; i++)
-                    {
-                        tsPlayer.TPlayer.buffType[i] = 0;
-                        tsPlayer.TPlayer.buffTime[i] = 0;
-                    }
-                    NetMessage.SendData((int)PacketTypes.PlayerBuff, -1, -1, null, tsPlayer.Index);
-
-                    for (int i = 0; i < Player.maxBuffs; i++)
-                    {
-                        var savedBuff = backup[i + 200];
-                        if (savedBuff.NetId != 0)
-                        {
-                            tsPlayer.TPlayer.AddBuff(savedBuff.NetId, savedBuff.Stack, false);
-                        }
-                    }
-                    NetMessage.SendData((int)PacketTypes.PlayerBuff, -1, -1, null, tsPlayer.Index);
-
-                    for (int i = 0; i < 10; i++)
-                    {
-                        SetAndSyncArmor(tsPlayer, i, backup[i + 100]);
-                    }
-
-                    tsPlayer.SendData(PacketTypes.PlayerBuff, "", tsPlayer.Index);
-                    for (int i = 0; i < 5; i++)
-                    {
-                        SetAndSyncMisc(tsPlayer, i, backup[i + 120]);
-                    }
-
-                    PvPTerraJson.DeleteInventoryBackup(tsPlayer.Account.Name);
-                    tsPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Inv_RestoreSuccess"));
-
-                    if (pvpPlayer.PendingCoinReward > 0)
-                    {
-                        InjectCoins(tsPlayer, pvpPlayer.PendingCoinReward);
-
-                        string iconEarnings = Utils.PvPTerraMisc.CopperToIconTag(pvpPlayer.PendingCoinReward);
-                        tsPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Inv_RewardPending", iconEarnings));
-
-                        pvpPlayer.PendingCoinReward = 0;
+                        tsPlayer.TPlayer.AddBuff(savedBuff.NetId, savedBuff.Stack, false);
                     }
                 }
+                NetMessage.SendData((int)PacketTypes.PlayerBuff, -1, -1, null, tsPlayer.Index);
+
+                for (int i = 0; i < 10; i++)
+                {
+                    SetAndSyncArmor(tsPlayer, i, backup[i + 100]);
+                }
+
+                tsPlayer.SendData(PacketTypes.PlayerBuff, "", tsPlayer.Index);
+                for (int i = 0; i < 5; i++)
+                {
+                    SetAndSyncMisc(tsPlayer, i, backup[i + 120]);
+                }
+
+                PvPTerraJson.DeleteInventoryBackup(accName);
+                tsPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Inv_RestoreSuccess"));
+
+                if (pvpPlayer.PendingCoinReward > 0)
+                {
+                    InjectCoins(tsPlayer, pvpPlayer.PendingCoinReward);
+
+                    string iconEarnings = Utils.PvPTerraMisc.CopperToIconTag(pvpPlayer.PendingCoinReward);
+                    tsPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Inv_RewardPending", iconEarnings));
+
+                    pvpPlayer.PendingCoinReward = 0;
+                }
+
+                pvpPlayer.OriginalStatLifeMax = 0;
+                pvpPlayer.OriginalStatManaMax = 0;
             }
         }
         public static void InjectCoins(TSPlayer player, int addedCopper)
@@ -383,7 +409,7 @@ namespace PvPterraUtils.Handlers
                 else if (item.type == 73) currentCopper += item.stack * 10000;
                 else if (item.type == 74) currentCopper += (long)item.stack * 1000000;
 
-                player.TPlayer.inventory[i] = new Item(); 
+                player.TPlayer.inventory[i] = new Item();
             }
 
             long total = currentCopper + addedCopper;
@@ -454,7 +480,13 @@ namespace PvPterraUtils.Handlers
             var tsPlayer = pvpPlayer.TSPlayer;
             bool didRestock = false;
 
-            int itemSeconds = ParseSeconds(regionConfig.PvPItemsRestore);
+            string itemRestoreTime = (!string.IsNullOrWhiteSpace(regionConfig.PvPItemsRestore) && regionConfig.PvPItemsRestore.ToLower() != "none")
+                ? regionConfig.PvPItemsRestore : Data.PvPTerraJson.Config.PvPItemsRestore;
+
+            string potionRestoreTime = (!string.IsNullOrWhiteSpace(regionConfig.PvPotionsRestore) && regionConfig.PvPotionsRestore.ToLower() != "none")
+                ? regionConfig.PvPotionsRestore : Data.PvPTerraJson.Config.PvPotionsRestore;
+
+            int itemSeconds = ParseSeconds(itemRestoreTime);
             if (itemSeconds > 0 && (DateTime.Now - pvpPlayer.LastItemRestoreTime).TotalSeconds >= itemSeconds)
             {
                 var itemsList = (regionConfig.PvPinventoryItems?.Count > 0) ? regionConfig.PvPinventoryItems : Data.PvPTerraJson.Config.PvPinventoryItems;
@@ -532,7 +564,6 @@ namespace PvPterraUtils.Handlers
             if (lower.EndsWith("m")) return int.TryParse(lower.TrimEnd('m'), out int m) ? m * 60 : 0;
             return int.TryParse(lower, out int res) ? res : 0;
         }
-
         public static void ParseItemData(string data, out int itemId, out int stack)
         {
             itemId = 0; stack = 0;

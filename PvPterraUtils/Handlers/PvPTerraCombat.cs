@@ -13,7 +13,6 @@ namespace PvPterraUtils.Handlers
 {
     public class PvPTerraCombat
     {
-
         public static void OnGetData(GetDataEventArgs args)
         {
 
@@ -68,7 +67,7 @@ namespace PvPterraUtils.Handlers
             {
                 using (var reader = new System.IO.BinaryReader(new System.IO.MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
                 {
-                    byte action = reader.ReadByte();
+                    byte action = reader.ReadByte(); 
                     short x = reader.ReadInt16();
                     short y = reader.ReadInt16();
 
@@ -254,61 +253,71 @@ namespace PvPterraUtils.Handlers
 
                 if (killerId >= 0 && killerId < 255)
                 {
-                    var killerTS = TShock.Players[killerId];
-                    var killerPvP = PvPterraCore.PvPPlayers[killerId];
-
-                    if (killerTS != null && killerPvP != null)
+                    if (killerId == victimId)
                     {
-                        killerPvP.KillStreak++;
-
-                        CheckAndBroadcastStreak(killerPvP);
-
-                        if (victim.KillStreak >= 3)
-                        {
-                            Utils.PvPTerraMisc.BroadcastToRegion(victim.CurrentRegion,
-                                PvPTerrai18n.GetString("Streak_End", killerTS.Name, victim.TSPlayer.Name), 255, 100, 100);
-                        }
-
-                        string killerName = killerTS.Account?.Name ?? killerTS.Name;
-                        string victimName = victim.TSPlayer.Account?.Name ?? victim.TSPlayer.Name;
-                        PvPterraCore.Database.EnqueueKill(killerName, victimName, victim.CurrentRegion);
-                        GiveKillReward(killerTS, victim);
-                    }
-                }
-
-                Data.PvPTerraJson.Config.RegionConfigs.TryGetValue(victim.CurrentRegion, out var regionConfig);
-
-                bool isFFA = regionConfig != null && regionConfig.Mode.Equals("FFA", StringComparison.OrdinalIgnoreCase);
-                bool allowBack = (regionConfig != null && regionConfig.AllowBackOnDeath) || Data.PvPTerraJson.Config.AllowBackOnDeath;
-
-                victim.KillStreak = 0;
-
-                if (isFFA)
-                {
-                    if (!allowBack)
-                    {
-                        victim.NeedsInventoryRestore = true;
-                        victim.IsInPvP = false;
-                        victim.IsSpectator = false;
-                        Utils.PvPTerraMisc.SyncPvPState(victim.TSPlayer, false, "None");
+                        victim.KillStreak = 0;
                     }
                     else
                     {
-                        victim.PendingRespawnTeleport = true; 
-                    }
-                }
-                else
-                {
-                    if (!allowBack) victim.IsSpectator = true;
-                    else victim.PendingRespawnTeleport = true; 
-                }
+                        var killerTS = TShock.Players[killerId];
+                        var killerPvP = PvPterraCore.PvPPlayers[killerId];
 
-                string deathRegion = victim.CurrentRegion;
-                System.Threading.Tasks.Task.Run(async () =>
-                {
-                    await System.Threading.Tasks.Task.Delay(150);
-                    PvPTerraRegion.CheckMatchWinner(deathRegion);
-                });
+                        if (killerTS != null && killerPvP != null)
+                        {
+                            killerPvP.KillStreak++;
+
+                            CheckAndBroadcastStreak(killerPvP);
+
+                            if (victim.KillStreak >= 3)
+                            {
+                                Utils.PvPTerraMisc.BroadcastToRegion(victim.CurrentRegion,
+                                    PvPTerrai18n.GetString("Streak_End", killerTS.Name, victim.TSPlayer.Name), 255, 100, 100);
+                            }
+
+                            string killerName = killerTS.Account?.Name ?? killerTS.Name;
+                            string victimName = victim.TSPlayer.Account?.Name ?? victim.TSPlayer.Name;
+                            PvPterraCore.Database.EnqueueKill(killerName, victimName, victim.CurrentRegion);
+                            GiveKillReward(killerTS, victim);
+                        }
+                    }
+
+                    Data.PvPTerraJson.Config.RegionConfigs.TryGetValue(victim.CurrentRegion, out var regionConfig);
+
+                    bool isFFA = regionConfig != null && regionConfig.Mode.Equals("FFA", StringComparison.OrdinalIgnoreCase);
+                    bool allowBack = (regionConfig != null && regionConfig.AllowBackOnDeath) || Data.PvPTerraJson.Config.AllowBackOnDeath;
+
+                    victim.KillStreak = 0;
+
+                    if (!PvPTerraCommands.GlobalPvPActive)
+                    {
+                        if (isFFA)
+                        {
+                            if (!allowBack)
+                            {
+                                victim.NeedsInventoryRestore = true;
+                                victim.IsInPvP = false;
+                                victim.IsSpectator = false;
+                                Utils.PvPTerraMisc.SyncPvPState(victim.TSPlayer, false, "None");
+                            }
+                            else
+                            {
+                                victim.PendingRespawnTeleport = true;
+                            }
+                        }
+                        else
+                        {
+                            if (!allowBack) victim.IsSpectator = true;
+                            else victim.PendingRespawnTeleport = true;
+                        }
+                    }
+
+                    string deathRegion = victim.CurrentRegion;
+                    System.Threading.Tasks.Task.Run(async () =>
+                    {
+                        await System.Threading.Tasks.Task.Delay(150);
+                        PvPTerraRegion.CheckMatchWinner(deathRegion);
+                    });
+                }
             }
         }
 
@@ -332,10 +341,22 @@ namespace PvPterraUtils.Handlers
 
         public static void GiveKillReward(TSPlayer killer, PvPPlayer victim)
         {
-            if (!Data.PvPTerraJson.Config.RegionConfigs.TryGetValue(victim.CurrentRegion, out var regionConfig))
-                return;
+            string rewardString = "none";
+            bool usedPvPInv = false;
 
-            string rewardString = regionConfig.PvPreward;
+            if (PvPTerraCommands.GlobalPvPActive)
+            {
+                rewardString = PvPTerraCommands.GlobalPvPReward;
+                usedPvPInv = Data.PvPTerraJson.Config.PvPinventoryActive;
+            }
+            else
+            {
+                if (!Data.PvPTerraJson.Config.RegionConfigs.TryGetValue(victim.CurrentRegion, out var regionConfig))
+                    return;
+
+                rewardString = regionConfig.PvPreward;
+                usedPvPInv = regionConfig.PvPinventoryActive || Data.PvPTerraJson.Config.PvPinventoryActive;
+            }
 
             if (string.IsNullOrWhiteSpace(rewardString) || rewardString.ToLower() == "none")
                 return;
@@ -344,7 +365,6 @@ namespace PvPterraUtils.Handlers
             if (totalCopper <= 0) return;
 
             var killerPvP = PvPterraCore.PvPPlayers[killer.Index];
-            bool usedPvPInv = false;
 
             if (Data.PvPTerraJson.Config.RegionConfigs.TryGetValue(victim.CurrentRegion, out var config2))
                 usedPvPInv = config2.PvPinventoryActive || Data.PvPTerraJson.Config.PvPinventoryActive;
@@ -448,7 +468,7 @@ namespace PvPterraUtils.Handlers
                                 return;
                             }
 
-                            args.Handled = true;
+                            args.Handled = true; 
                             pvpPlayer.TSPlayer.SendErrorMessage(PvPTerrai18n.GetString("Combat_PickupLocked"));
 
                             for (int i = 0; i < 59; i++)

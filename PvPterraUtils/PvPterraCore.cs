@@ -14,11 +14,11 @@ using TShockAPI.Hooks;
 
 namespace PvPterraUtils
 {
-    [ApiVersion(1, 0)]
+    [ApiVersion(2, 1)]
     public class PvPterraCore : TerrariaPlugin
     {
         public override string Name => "PvPterraUtils";
-        public override Version Version => new Version(1, 0, 1, 0);
+        public override Version Version => new Version(1, 0, 7, 0);
         public override string Author => "PakeMPC";
         public override string Description => "Advanced PvP management system with multiple tools.";
 
@@ -95,7 +95,6 @@ namespace PvPterraUtils
         {
             PvPPlayers[args.Who] = new PvPPlayer(args.Who);
         }
-
         private async void OnPlayerLogin(TShockAPI.Hooks.PlayerPostLoginEventArgs args)
         {
             try

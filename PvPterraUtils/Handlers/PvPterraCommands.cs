@@ -24,6 +24,18 @@ namespace PvPterraUtils.Handlers
 
             if (!PvPTerraJson.Config.RegionConfigs.TryGetValue(pvpPlayer.CurrentRegion, out var regionConfig))
             {
+                if (GlobalPvPActive && string.IsNullOrEmpty(pvpPlayer.CurrentRegion))
+                {
+                    args.Player.SendMessage(PvPTerrai18n.GetString("Cmd_Info_Title", "Global PvP"), 255, 165, 0);
+                    args.Player.SendMessage(PvPTerrai18n.GetString("Cmd_Info_Mode", GlobalPvPMode), 255, 255, 255);
+                    string globalIcon = Utils.PvPTerraMisc.CopperToIconTag(Utils.PvPTerraMisc.ParseCoinString(GlobalPvPReward));
+                    args.Player.SendMessage(PvPTerrai18n.GetString("Cmd_Info_Reward", globalIcon), 255, 215, 0);
+
+                    string teamGlobal = pvpPlayer.Team == "None" ? PvPTerrai18n.GetString("Cmd_Info_TeamFFA") : pvpPlayer.Team;
+                    args.Player.SendMessage(PvPTerrai18n.GetString("Cmd_Info_Team", teamGlobal), 173, 216, 230);
+                    return;
+                }
+
                 args.Player.SendErrorMessage(PvPTerrai18n.GetString("Cmd_Info_Error"));
                 return;
             }
@@ -113,21 +125,14 @@ namespace PvPterraUtils.Handlers
             }
         }
 
-
         public static bool GlobalPvPActive = false;
         public static bool ForceTeamMode = false;
         public static bool IgnoreTeamMode = false;
+        public static string GlobalPvPMode = "FFA";
+        public static string GlobalPvPReward = "none";
 
         public static void ActiveCommand(CommandArgs args)
         {
-            if (args.Parameters.Count < 1)
-            {
-                args.Player.SendErrorMessage(PvPTerrai18n.GetString("Cmd_Active_Syntax"));
-                return;
-            }
-
-            GlobalPvPActive = args.Parameters[0].ToLower() == "t" || args.Parameters[0].ToLower() == "true";
-
             if (!GlobalPvPActive)
             {
                 ForceTeamMode = false;
@@ -138,8 +143,12 @@ namespace PvPterraUtils.Handlers
                 {
                     if (pvpPlayer != null && pvpPlayer.TSPlayer != null && pvpPlayer.TSPlayer.Active)
                     {
-                        pvpPlayer.IsInPvP = false;
-                        pvpPlayer.Team = "None";
+                        if (pvpPlayer.OriginalStatLifeMax > 0)
+                        {
+                            PvPTerraInventory.RestoreOriginalInventory(pvpPlayer);
+                        }
+
+                        pvpPlayer.ResetPvPState();
                         Utils.PvPTerraMisc.SyncPvPState(pvpPlayer.TSPlayer, false, "None");
                     }
                 }
@@ -149,13 +158,13 @@ namespace PvPterraUtils.Handlers
             IgnoreTeamMode = args.Parameters.Contains("--ignoreteam");
             ForceTeamMode = args.Parameters.Contains("--forceteam");
 
-            string modo = args.Parameters.Count > 1 ? args.Parameters[1] : "FFA";
-            string recompensa = args.Parameters.Count > 2 ? args.Parameters[2] : "none";
+            GlobalPvPMode = args.Parameters.Count > 1 ? args.Parameters[1] : "FFA";
+            GlobalPvPReward = args.Parameters.Count > 2 ? args.Parameters[2] : "none";
 
             TShock.Utils.Broadcast(PvPTerrai18n.GetString("Cmd_Active_On"), 255, 0, 0);
 
-            string activeRewardIcon = Utils.PvPTerraMisc.CopperToIconTag(Utils.PvPTerraMisc.ParseCoinString(recompensa));
-            TShock.Utils.Broadcast(PvPTerrai18n.GetString("Cmd_Active_Status", modo, activeRewardIcon), 255, 255, 0);
+            string activeRewardIcon = Utils.PvPTerraMisc.CopperToIconTag(Utils.PvPTerraMisc.ParseCoinString(GlobalPvPReward));
+            TShock.Utils.Broadcast(PvPTerrai18n.GetString("Cmd_Active_Status", GlobalPvPMode, activeRewardIcon), 255, 255, 0);
 
             foreach (var pvpPlayer in PvPterraCore.PvPPlayers)
             {
@@ -164,8 +173,7 @@ namespace PvPterraUtils.Handlers
                     pvpPlayer.IsInPvP = true;
                     pvpPlayer.IsSpectator = false;
                     pvpPlayer.IsWaitingForMatch = false;
-
-                    PvPterraCore.AssignPlayerTeam(pvpPlayer, modo, "");
+                    PvPterraCore.AssignPlayerTeam(pvpPlayer, GlobalPvPMode, "");
 
                     Utils.PvPTerraMisc.SyncPvPState(pvpPlayer.TSPlayer, true, pvpPlayer.Team);
                     pvpPlayer.TSPlayer.SendWarningMessage(PvPTerrai18n.GetString("Cmd_Active_Force", pvpPlayer.Team));

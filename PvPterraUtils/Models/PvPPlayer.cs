@@ -51,7 +51,6 @@ namespace PvPterraUtils.Models
             OriginalInventory = new NetItem[NetItem.MaxInventory];
         }
 
-
         public void ResetPvPState()
         {
             IsInPvP = false;

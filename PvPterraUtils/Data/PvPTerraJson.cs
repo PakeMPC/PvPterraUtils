@@ -59,6 +59,8 @@ namespace PvPterraUtils.Data
     public class InventoryBackup
     {
         public string AccountName { get; set; }
+        public int OriginalLife { get; set; }  
+        public int OriginalMana { get; set; }  
         public NetItem[] Items { get; set; }
     }
 
@@ -119,31 +121,27 @@ namespace PvPterraUtils.Data
                 TShock.Log.ConsoleError(PvPTerrai18n.GetString("Log_ConfigSaveError", ex.Message));
             }
         }
-
-        public static void SaveInventoryBackup(string accountName, NetItem[] inventory)
+        public static void SaveInventoryBackup(string accountName, NetItem[] inventory, int life, int mana)
         {
             if (string.IsNullOrWhiteSpace(accountName)) return;
 
             if (!Directory.Exists(BackupsDirectory))
-            {
                 Directory.CreateDirectory(BackupsDirectory);
-            }
 
             string backupPath = Path.Combine(BackupsDirectory, $"{accountName}.json");
-            var backup = new InventoryBackup { AccountName = accountName, Items = inventory };
+            var backup = new InventoryBackup { AccountName = accountName, Items = inventory, OriginalLife = life, OriginalMana = mana };
 
             string json = JsonConvert.SerializeObject(backup, Formatting.Indented);
             File.WriteAllText(backupPath, json);
         }
 
-        public static NetItem[] LoadInventoryBackup(string accountName)
+        public static InventoryBackup LoadInventoryBackup(string accountName)
         {
             string backupPath = Path.Combine(BackupsDirectory, $"{accountName}.json");
             if (File.Exists(backupPath))
             {
                 string json = File.ReadAllText(backupPath);
-                var backup = JsonConvert.DeserializeObject<InventoryBackup>(json);
-                return backup.Items;
+                return JsonConvert.DeserializeObject<InventoryBackup>(json);
             }
             return null;
         }

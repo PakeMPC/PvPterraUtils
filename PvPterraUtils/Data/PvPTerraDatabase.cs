@@ -137,19 +137,19 @@ namespace PvPterraUtils.Data
                     switch (rank)
                     {
                         case 1:
-                            styledName = GetRainbowText(name); 
-                            prefix = "1. [i:4601]";            
+                            styledName = GetRainbowText(name); // Nombre Arcoíris
+                            prefix = "1. [i:4601]";            // Trofeo de Oro de Golf
                             break;
                         case 2:
-                            styledName = $"[c/DDA0DD:{name}]"; 
-                            prefix = "2. [i:4600]";            
+                            styledName = $"[c/DDA0DD:{name}]"; // Morado Claro
+                            prefix = "2. [i:4600]";            // Trofeo de Plata de Golf
                             break;
                         case 3:
-                            styledName = $"[c/90EE90:{name}]"; 
-                            prefix = "3. [i:4599]";            
+                            styledName = $"[c/90EE90:{name}]"; // Verde Claro
+                            prefix = "3. [i:4599]";            // Trofeo de Bronce de Golf
                             break;
                         default:
-                            styledName = $"[c/FFFFFF:{name}]"; 
+                            styledName = $"[c/FFFFFF:{name}]"; // Blanco para el resto
                             prefix = $"{rank}. ";
                             break;
                     }

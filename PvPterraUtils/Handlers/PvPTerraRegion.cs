@@ -94,31 +94,6 @@ namespace PvPterraUtils.Handlers
 
                 var tsPlayer = pvpPlayer.TSPlayer;
 
-                if (pvpPlayer.PendingRespawnTeleport && !pvpPlayer.TSPlayer.TPlayer.dead)
-                {
-                    pvpPlayer.PendingRespawnTeleport = false;
-
-                    bool isMatchActive = PvPterraCore.PvPPlayers.Any(p =>
-                        p != null && p.IsInPvP && p.CurrentRegion == pvpPlayer.CurrentRegion &&
-                        !p.IsSpectator && !p.IsWaitingForMatch);
-
-                    if (isMatchActive && !string.IsNullOrEmpty(pvpPlayer.CurrentRegion))
-                    {
-                        var region = TShock.Regions.GetRegionByName(pvpPlayer.CurrentRegion);
-                        if (region != null)
-                        {
-                            pvpPlayer.TSPlayer.Teleport(region.Area.Center.X * 16, region.Area.Center.Y * 16);
-                            pvpPlayer.IgnoreRegionChangesUntil = DateTime.Now.AddSeconds(3);
-                        }
-                    }
-                    else
-                    {
-                        pvpPlayer.NeedsInventoryRestore = true;
-                        pvpPlayer.IsInPvP = false;
-                        Utils.PvPTerraMisc.SyncPvPState(tsPlayer, false, "None");
-                    }
-                }
-
                 if (tsPlayer.TPlayer.dead || DateTime.Now < pvpPlayer.IgnoreRegionChangesUntil)
                     continue;
 
@@ -129,70 +104,22 @@ namespace PvPterraUtils.Handlers
                 if (pvpPlayer.CurrentRegion != currentRegionName)
                 {
                     string oldRegion = pvpPlayer.CurrentRegion;
-                    Data.PvPTerraJson.Config.RegionConfigs.TryGetValue(oldRegion, out var oldConfig);
 
-                    if (!string.IsNullOrEmpty(currentRegionName))
+                    bool isOldRegionPvP = pvpPlayer.IsInPvP;
+                    bool isNewRegionPvP = !string.IsNullOrEmpty(currentRegionName) && PvPTerraJson.Config.RegionConfigs.ContainsKey(currentRegionName);
+
+                    if (isOldRegionPvP)
+                    {
+                        ProcessRegionExit(pvpPlayer, oldRegion, tsPlayer);
+                    }
+
+                    if (isNewRegionPvP)
                     {
                         EnterPvPRegion(pvpPlayer, currentRegionName);
                     }
-                    else if (!string.IsNullOrEmpty(oldRegion))
+                    else
                     {
-                        bool fledInCombat = false;
-                        bool isGlobalPvP = PvPTerraCommands.GlobalPvPActive;
-
-                        bool usedPvPInv = false;
-                        if (oldConfig != null)
-                            usedPvPInv = oldConfig.PvPinventoryActive || PvPTerraJson.Config.PvPinventoryActive;
-
-                        if (pvpPlayer.InCombat && !tsPlayer.TPlayer.dead && !isGlobalPvP)
-                        {
-                            var enemies = PvPterraCore.PvPPlayers.Where(p =>
-                                p != null && p.IsInPvP && p.CurrentRegion == oldRegion &&
-                                !p.IsSpectator && !p.IsWaitingForMatch && !p.TSPlayer.TPlayer.dead &&
-                                p.TSPlayer.Index != tsPlayer.Index).ToList();
-
-                            bool enemiesAlive = (oldConfig != null && !oldConfig.Mode.Equals("FFA", StringComparison.OrdinalIgnoreCase))
-                                ? enemies.Any(p => p.Team != pvpPlayer.Team)
-                                : enemies.Any();
-
-                            if (enemiesAlive)
-                            {
-                                tsPlayer.DamagePlayer(9999);
-                                tsPlayer.SendErrorMessage(PvPTerrai18n.GetString("Reg_FleeKill"));
-                                fledInCombat = true;
-                            }
-                        }
-
-                        pvpPlayer.ResetPvPState();
-                        Utils.PvPTerraMisc.SyncPvPState(tsPlayer, false, "None");
-
-                        if (tsPlayer.TPlayer.dead || fledInCombat)
-                        {
-                            if (usedPvPInv) pvpPlayer.NeedsInventoryRestore = true;
-                        }
-                        else
-                        {
-                            if (usedPvPInv)
-                            {
-                                PvPTerraInventory.RestoreOriginalInventory(pvpPlayer);
-                                tsPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Reg_LeaveRestore", oldRegion));
-                            }
-                            else
-                            {
-                                tsPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Reg_LeaveNoRestore", oldRegion));
-                            }
-                        }
-
-                        CheckMatchWinner(oldRegion);
-
-                        if (PvPTerraJson.Config.CleanBuffsOnEnter)
-                        {
-                            for (int i = 0; i < Player.maxBuffs; i++)
-                            {
-                                tsPlayer.TPlayer.buffType[i] = 0;
-                                tsPlayer.TPlayer.buffTime[i] = 0;
-                            }
-                        }
+                        pvpPlayer.CurrentRegion = currentRegionName;
                     }
                 }
             }
@@ -228,12 +155,14 @@ namespace PvPterraUtils.Handlers
 
             int requiredPlayers = GetRequiredPlayers(config.Mode);
 
-if (isFFA || requiredPlayers <= 0)
+            if (isFFA || requiredPlayers <= 0)
             {
                 var allFFAPlayers = PvPterraCore.PvPPlayers
                     .Where(p => p != null && p.IsInPvP && p.CurrentRegion == regionName && !p.IsSpectator)
                     .ToList();
+
                 var waitingFFAPlayers = allFFAPlayers.Where(p => p.IsWaitingForMatch).ToList();
+
                 if (allFFAPlayers.Count < 2)
                 {
                     foreach (var p in waitingFFAPlayers)
@@ -253,6 +182,7 @@ if (isFFA || requiredPlayers <= 0)
                             p.TSPlayer.Teleport(Main.spawnTileX * 16, Main.spawnTileY * 16);
                             string costIcons = Utils.PvPTerraMisc.CopperToIconTag(Utils.PvPTerraMisc.ParseCoinString(config.PvPreward));
                             p.TSPlayer.SendErrorMessage(PvPTerrai18n.GetString("Reg_KickNoFunds", costIcons));
+
                             p.ResetPvPState();
                             Utils.PvPTerraMisc.SyncPvPState(p.TSPlayer, false, "None");
                             anyoneKicked = true;
@@ -268,8 +198,9 @@ if (isFFA || requiredPlayers <= 0)
                     foreach (var p in waitingFFAPlayers)
                     {
                         PvPTerraInventory.TryTakeEscrow(p.TSPlayer, config.PvPreward);
+
                         p.HasPaidEscrow = true;
-                        p.IsWaitingForMatch = false; 
+                        p.IsWaitingForMatch = false;
                         p.IsSpectator = false;
 
                         if (config.PvPinventoryActive || PvPTerraJson.Config.PvPinventoryActive)
@@ -277,8 +208,10 @@ if (isFFA || requiredPlayers <= 0)
 
                         p.TSPlayer.TPlayer.hostile = true;
                         NetMessage.SendData((int)PacketTypes.TogglePvp, -1, -1, null, p.TSPlayer.Index);
+
                         p.LastItemRestoreTime = DateTime.Now;
                         p.LastPotionRestoreTime = DateTime.Now;
+
                         p.TSPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Reg_FFAEnter"));
                     }
                 }
@@ -448,7 +381,6 @@ if (isFFA || requiredPlayers <= 0)
                         if (p.TSPlayer.TPlayer.dead)
                         {
                             p.IsWaitingForMatch = false;
-                            p.IsInPvP = false;
                             p.NeedsInventoryRestore = true; 
                             continue;
                         }
@@ -570,9 +502,72 @@ if (isFFA || requiredPlayers <= 0)
             }
             catch (Exception ex)
             {
+
                 TShock.Log.ConsoleError(PvPTerrai18n.GetString("Log_EnterRegionError", ex.Message, ex.StackTrace));
 
                 pvpPlayer?.TSPlayer?.SendErrorMessage(PvPTerrai18n.GetString("Reg_InternalError"));
+            }
+        }
+
+        private static void ProcessRegionExit(PvPPlayer pvpPlayer, string oldRegion, TSPlayer tsPlayer)
+        {
+            bool fledInCombat = false;
+            bool isGlobalPvP = PvPTerraCommands.GlobalPvPActive;
+
+            Data.PvPTerraJson.Config.RegionConfigs.TryGetValue(oldRegion, out var oldConfig);
+            bool usedPvPInv = false;
+            if (oldConfig != null)
+                usedPvPInv = oldConfig.PvPinventoryActive || PvPTerraJson.Config.PvPinventoryActive;
+
+            if (pvpPlayer.InCombat && !tsPlayer.TPlayer.dead && !isGlobalPvP)
+            {
+                var enemies = PvPterraCore.PvPPlayers.Where(p =>
+                    p != null && p.IsInPvP && p.CurrentRegion == oldRegion &&
+                    !p.IsSpectator && !p.IsWaitingForMatch && !p.TSPlayer.TPlayer.dead &&
+                    p.TSPlayer.Index != tsPlayer.Index).ToList();
+
+                bool enemiesAlive = (oldConfig != null && !oldConfig.Mode.Equals("FFA", StringComparison.OrdinalIgnoreCase))
+                    ? enemies.Any(p => p.Team != pvpPlayer.Team)
+                    : enemies.Any();
+
+                if (enemiesAlive)
+                {
+                    tsPlayer.DamagePlayer(9999);
+                    tsPlayer.SendErrorMessage(PvPTerrai18n.GetString("Reg_FleeKill"));
+                    fledInCombat = true;
+                }
+            }
+
+            pvpPlayer.ResetPvPState();
+            Utils.PvPTerraMisc.SyncPvPState(tsPlayer, false, "None");
+            bool actuallySwapped = (usedPvPInv || pvpPlayer.IsSpectator) && pvpPlayer.OriginalStatLifeMax > 0;
+
+            if (tsPlayer.TPlayer.dead || fledInCombat)
+            {
+                if (actuallySwapped) pvpPlayer.NeedsInventoryRestore = true;
+            }
+            else
+            {
+                if (actuallySwapped)
+                {
+                    PvPTerraInventory.RestoreOriginalInventory(pvpPlayer);
+                    tsPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Reg_LeaveRestore", oldRegion));
+                }
+                else
+                {
+                    tsPlayer.SendSuccessMessage(PvPTerrai18n.GetString("Reg_LeaveNoRestore", oldRegion));
+                }
+            }
+
+            CheckMatchWinner(oldRegion);
+
+            if (PvPTerraJson.Config.CleanBuffsOnEnter)
+            {
+                for (int i = 0; i < Player.maxBuffs; i++)
+                {
+                    tsPlayer.TPlayer.buffType[i] = 0;
+                    tsPlayer.TPlayer.buffTime[i] = 0;
+                }
             }
         }
 
@@ -610,6 +605,7 @@ if (isFFA || requiredPlayers <= 0)
 
                 if (reapplied && !forceUpdate)
                 {
+
                     pvpPlayer.TSPlayer.SendWarningMessage(PvPTerrai18n.GetString("Reg_StrictBuffs"));
                 }
             }
@@ -620,3 +616,4 @@ if (isFFA || requiredPlayers <= 0)
         }
     }
 }
+
